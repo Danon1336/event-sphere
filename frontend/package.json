@@ -11,18 +11,19 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@nuxtjs/axios": "^5.13.6",
     "@nuxtjs/leaflet": "^1.2.6",
     "@vueuse/core": "^10.7.0",
     "nuxt": "^3.16.2",
     "pinia": "^3.0.1",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0",
-    "vue2-google-maps": "^0.10.7",
-    "@nuxtjs/axios": "^5.13.6"
+    "vue2-google-maps": "^0.10.7"
   },
   "devDependencies": {
     "@nuxt/devtools": "^1.0.0",
     "@nuxtjs/tailwindcss": "^6.13.2",
+    "@vitejs/plugin-vue-jsx": "^4.1.2",
     "@vue-leaflet/vue-leaflet": "^0.10.1",
     "init": "^0.1.2",
     "leaflet": "^1.9.4",
