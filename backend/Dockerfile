@@ -1,16 +1,14 @@
 FROM golang:1.24.2-alpine
 
-RUN apk add --no-cache gcc musl-dev
+RUN apk add --no-cache gcc musl-dev curl
 
 WORKDIR /app
+COPY go.mod ./
 COPY . .
-RUN go mod init project/backend || true
 RUN go mod tidy
-RUN go get github.com/gin-gonic/gin \
-    github.com/mattn/go-sqlite3 \
-    golang.org/x/crypto/argon2 \
-    github.com/dgrijalva/jwt-go \
-    github.com/gin-contrib/cors
+RUN go mod download
 RUN CGO_ENABLED=1 go build -o main .
+RUN ls -l main && test -f main || exit 1
 
+EXPOSE 8080
 CMD ["./main"]

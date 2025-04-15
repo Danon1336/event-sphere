@@ -2,44 +2,34 @@ package db
 
 import (
 	"database/sql"
+	"golang.org/x/crypto/argon2"
 	"log"
-	"os"
 
 	_ "github.com/mattn/go-sqlite3"
-	"golang.org/x/crypto/argon2"
 )
 
 var DB *sql.DB
 
 func InitDB() {
 	var err error
-	if _, err := os.Stat("users.db"); os.IsNotExist(err) {
-		file, err := os.Create("users.db")
-		if err != nil {
-			log.Fatal(err)
-		}
-		file.Close()
-	}
-
-	DB, err = sql.Open("sqlite3", "users.db")
+	DB, err = sql.Open("sqlite3", "./users.db")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("unable to open database file: %v", err)
 	}
 
 	createTable := `
-		CREATE TABLE IF NOT EXISTS users (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			name TEXT NOT NULL,
-			surname TEXT NOT NULL,
-			email TEXT UNIQUE NOT NULL,
-			password TEXT NOT NULL,
-			role TEXT NOT NULL,
-			salt TEXT NOT NULL
-		);
-	`
+	CREATE TABLE IF NOT EXISTS users (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL,
+		surname TEXT NOT NULL,
+		email TEXT NOT NULL UNIQUE,
+		password TEXT NOT NULL,
+		role TEXT NOT NULL,
+		salt TEXT NOT NULL
+	);`
 	_, err = DB.Exec(createTable)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to create table: %v", err)
 	}
 }
 

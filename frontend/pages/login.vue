@@ -64,7 +64,7 @@
             v-if="showError"
             class="fixed top-6 right-6 bg-[#FF6584] text-[#1A1A2E] px-6 py-4 rounded-xl shadow-lg animate-fade-slide font-semibold z-50"
         >
-            ❌ Неверный email или пароль
+            ❌ {{ errorMessage }}
         </div>
     </div>
 </template>
@@ -72,54 +72,82 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { useRuntimeConfig } from "#app";
 
 const router = useRouter();
+const config = useRuntimeConfig();
 const email = ref("");
 const password = ref("");
 const showSuccess = ref(false);
 const showError = ref(false);
 const csrfToken = ref("");
+const errorMessage = ref("");
 
 onMounted(async () => {
+    console.log("Компонент login.vue монтируется, запускаем fetchCSRFToken");
     await fetchCSRFToken();
 });
 
 const fetchCSRFToken = async () => {
-    const res = await fetch("http://localhost:8080/csrf-token", {
-        credentials: "include",
-    });
-    const data = await res.json();
-    csrfToken.value = data.csrf_token;
+    try {
+        const url = `${config.public.apiBase}/csrf-token`;
+        console.log("Отправка запроса на CSRF-токен:", url);
+        const response = await $fetch(url, {
+            method: "GET",
+            credentials: "include",
+        });
+        console.log("Ответ от /csrf-token:", response);
+        if (response.csrf_token) {
+            csrfToken.value = response.csrf_token;
+            console.log("CSRF token установлен:", csrfToken.value);
+        } else {
+            console.error("Ответ не содержит csrf_token:", response);
+            errorMessage.value = "CSRF-токен отсутствует в ответе";
+        }
+    } catch (error) {
+        console.error("Ошибка получения CSRF-токена:", error.message, error);
+        errorMessage.value =
+            "Не удалось загрузить CSRF-токен: " + error.message;
+    }
 };
 
 const onLogin = async () => {
+    errorMessage.value = "";
+    console.log("Попытка входа, текущий CSRF-токен:", csrfToken.value);
+    if (!csrfToken.value) {
+        errorMessage.value = "CSRF-токен не загружен";
+        console.error("Вход прерван:", errorMessage.value);
+        showError.value = true;
+        setTimeout(() => {
+            showError.value = false;
+        }, 2500);
+        return;
+    }
+
     try {
-        const res = await fetch("http://localhost:8080/login", {
+        const payload = {
+            email: email.value,
+            password: password.value,
+        };
+        console.log("Отправка данных на /login:", payload);
+        const response = await $fetch(`${config.public.apiBase}/login`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-Token": csrfToken.value,
-            },
-            body: JSON.stringify({
-                email: email.value,
-                password: password.value,
-            }),
             credentials: "include",
+            headers: {
+                "X-CSRF-Token": csrfToken.value,
+                "Content-Type": "application/json",
+            },
+            body: payload,
         });
-        const data = await res.json();
-        if (res.ok) {
-            showSuccess.value = true;
-            setTimeout(() => {
-                router.push(`/dashboard/${data.role}`);
-            }, 2000);
-        } else {
-            showError.value = true;
-            setTimeout(() => {
-                showError.value = false;
-            }, 2500);
-        }
+        console.log("Вход успешен:", response);
+        showSuccess.value = true;
+        setTimeout(() => {
+            router.push(`/dashboard/${response.role}`);
+        }, 2000);
     } catch (error) {
-        console.error("Ошибка:", error);
+        const errMsg = error.data?.error || "Неизвестная ошибка сервера";
+        console.error("Ошибка входа:", error.message, error);
+        errorMessage.value = errMsg;
         showError.value = true;
         setTimeout(() => {
             showError.value = false;
