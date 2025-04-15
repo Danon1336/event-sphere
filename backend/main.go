@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"log"
 	"project/backend/db"
 	"project/backend/handlers"
 	"project/backend/middleware"
@@ -15,23 +16,20 @@ func main() {
 	// Настройка Gin
 	r := gin.Default()
 
-	// Настройка CORS для фронтенда
+	// Настройка CORS
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
-		AllowMethods:     []string{"GET", "POST"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "X-CSRF-Token"},
+		AllowOrigins:     []string{"http://localhost:3000", "http://127.0.0.1:3000"},
+		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "X-CSRF-Token", "Accept"},
 		ExposeHeaders:    []string{"X-CSRF-Token"},
 		AllowCredentials: true,
 	}))
 
-	// Применяем CSRF middleware ко всем маршрутам
-	r.Use(middleware.CSRFMiddleware())
-
 	// Публичные маршруты
-	r.POST("/register", handlers.Register)
-	r.POST("/login", handlers.Login)
-	r.POST("/logout", handlers.Logout)
 	r.GET("/csrf-token", handlers.GetCSRFToken)
+	r.POST("/register", middleware.CSRFMiddleware(), handlers.Register)
+	r.POST("/login", middleware.CSRFMiddleware(), handlers.Login)
+	r.POST("/logout", handlers.Logout)
 
 	// Защищенные маршруты (требуется JWT)
 	protected := r.Group("/").Use(middleware.AuthMiddleware())
@@ -45,5 +43,8 @@ func main() {
 	}
 
 	// Запуск сервера
-	r.Run(":8080")
+	log.Println("Запускаем сервер на :8080")
+	if err := r.Run(":8080"); err != nil {
+		log.Fatalf("Ошибка запуска сервера: %v", err)
+	}
 }

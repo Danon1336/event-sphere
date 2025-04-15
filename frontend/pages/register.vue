@@ -115,53 +115,100 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { useRuntimeConfig } from "#app";
 
 const router = useRouter();
+const config = useRuntimeConfig();
 const name = ref("");
 const surname = ref("");
 const email = ref("");
 const password = ref("");
 const role = ref("participant");
 const csrfToken = ref("");
+const errorMessage = ref("");
 
 onMounted(async () => {
+    console.log("Компонент register.vue монтируется, запускаем fetchCSRFToken");
     await fetchCSRFToken();
 });
 
-const fetchCSRFToken = async () => {
-    const res = await fetch("http://localhost:8080/csrf-token", {
-        credentials: "include",
-    });
-    const data = await res.json();
-    csrfToken.value = data.csrf_token;
+const fetchCSRFToken = async (attempts = 3, delay = 1000) => {
+    for (let i = 0; i < attempts; i++) {
+        try {
+            const url = `${config.public.apiBase}/csrf-token`;
+            console.log(
+                `Отправка запроса на CSRF-токен (попытка ${i + 1}):`,
+                url,
+            );
+            const response = await $fetch(url, {
+                method: "GET",
+                credentials: "include",
+            });
+            console.log("Ответ от /csrf-token:", response);
+            if (response.csrf_token) {
+                csrfToken.value = response.csrf_token;
+                console.log("CSRF token установлен:", csrfToken.value);
+                errorMessage.value = "";
+                return;
+            } else {
+                console.error("Ответ не содержит csrf_token:", response);
+                errorMessage.value = "CSRF-токен отсутствует в ответе";
+            }
+        } catch (error) {
+            console.error(
+                `Ошибка получения CSRF-токена (попытка ${i + 1}):`,
+                error.message,
+                error,
+            );
+            errorMessage.value = `Не удалось загрузить CSRF-токен: ${error.message}`;
+            if (i < attempts - 1) {
+                console.log(`Повтор через ${delay}мс...`);
+                await new Promise((resolve) => setTimeout(resolve, delay));
+            }
+        }
+    }
+    if (!csrfToken.value) {
+        console.error("Все попытки получения CSRF-токена провалились");
+        alert("CSRF-токен не загружен");
+    }
 };
 
 const onRegister = async () => {
+    errorMessage.value = "";
+    console.log("Попытка регистрации, текущий CSRF-токен:", csrfToken.value);
+    if (!csrfToken.value) {
+        errorMessage.value = "CSRF-токен не загружен";
+        console.error("Регистрация прервана:", errorMessage.value);
+        alert(errorMessage.value);
+        return;
+    }
+
     try {
-        const res = await fetch("http://localhost:8080/register", {
+        const payload = {
+            name: name.value,
+            surname: surname.value,
+            email: email.value,
+            password: password.value,
+            role: role.value,
+        };
+        console.log("Отправка данных на /register:", payload);
+        const response = await $fetch(`${config.public.apiBase}/register`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-Token": csrfToken.value,
-            },
-            body: JSON.stringify({
-                name: name.value,
-                surname: surname.value,
-                email: email.value,
-                password: password.value,
-                role: role.value,
-            }),
             credentials: "include",
+            headers: {
+                "X-CSRF-Token": csrfToken.value,
+                "Content-Type": "application/json",
+            },
+            body: payload,
         });
-        if (res.ok) {
-            alert("Регистрация успешна!");
-            router.push("/login");
-        } else {
-            alert("Ошибка регистрации");
-        }
+        console.log("Регистрация успешна:", response);
+        alert("Регистрация успешна!");
+        router.push("/login");
     } catch (error) {
-        console.error("Ошибка:", error);
-        alert("Ошибка сервера");
+        const errMsg = error.data?.error || "Неизвестная ошибка сервера";
+        console.error("Ошибка регистрации:", error.message, error);
+        errorMessage.value = errMsg;
+        alert(`Ошибка: ${errMsg}`);
     }
 };
 
