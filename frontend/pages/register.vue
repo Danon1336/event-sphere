@@ -128,7 +128,7 @@ const csrfToken = ref("");
 const errorMessage = ref("");
 
 onMounted(async () => {
-    console.log("Компонент register.vue монтируется, запускаем fetchCSRFToken");
+    console.log("Компонент register.vue монтируется");
     await fetchCSRFToken();
 });
 
@@ -136,10 +136,7 @@ const fetchCSRFToken = async (attempts = 3, delay = 1000) => {
     for (let i = 0; i < attempts; i++) {
         try {
             const url = `${config.public.apiBase}/csrf-token`;
-            console.log(
-                `Отправка запроса на CSRF-токен (попытка ${i + 1}):`,
-                url,
-            );
+            console.log(`Запрос CSRF-токена (попытка ${i + 1}):`, url);
             const response = await $fetch(url, {
                 method: "GET",
                 credentials: "include",
@@ -147,9 +144,9 @@ const fetchCSRFToken = async (attempts = 3, delay = 1000) => {
             console.log("Ответ от /csrf-token:", response);
             if (response.csrf_token) {
                 csrfToken.value = response.csrf_token;
-                console.log("CSRF token установлен:", csrfToken.value);
+                console.log("CSRF-токен установлен:", csrfToken.value);
                 errorMessage.value = "";
-                return;
+                return true;
             } else {
                 console.error("Ответ не содержит csrf_token:", response);
                 errorMessage.value = "CSRF-токен отсутствует в ответе";
@@ -157,7 +154,6 @@ const fetchCSRFToken = async (attempts = 3, delay = 1000) => {
         } catch (error) {
             console.error(
                 `Ошибка получения CSRF-токена (попытка ${i + 1}):`,
-                error.message,
                 error,
             );
             errorMessage.value = `Не удалось загрузить CSRF-токен: ${error.message}`;
@@ -167,20 +163,24 @@ const fetchCSRFToken = async (attempts = 3, delay = 1000) => {
             }
         }
     }
-    if (!csrfToken.value) {
-        console.error("Все попытки получения CSRF-токена провалились");
-        alert("CSRF-токен не загружен");
-    }
+    console.error("Не удалось получить CSRF-токен");
+    errorMessage.value = "Не удалось загрузить CSRF-токен";
+    return false;
 };
 
 const onRegister = async () => {
     errorMessage.value = "";
     console.log("Попытка регистрации, текущий CSRF-токен:", csrfToken.value);
+
+    // Проверяем токен и запрашиваем снова, если он отсутствует
     if (!csrfToken.value) {
-        errorMessage.value = "CSRF-токен не загружен";
-        console.error("Регистрация прервана:", errorMessage.value);
-        alert(errorMessage.value);
-        return;
+        const success = await fetchCSRFToken();
+        if (!success) {
+            errorMessage.value = "CSRF-токен не загружен";
+            console.error("Регистрация прервана:", errorMessage.value);
+            alert(errorMessage.value);
+            return;
+        }
     }
 
     try {
@@ -206,7 +206,7 @@ const onRegister = async () => {
         router.push("/login");
     } catch (error) {
         const errMsg = error.data?.error || "Неизвестная ошибка сервера";
-        console.error("Ошибка регистрации:", error.message, error);
+        console.error("Ошибка регистрации:", error);
         errorMessage.value = errMsg;
         alert(`Ошибка: ${errMsg}`);
     }

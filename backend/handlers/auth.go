@@ -123,23 +123,26 @@ func Logout(c *gin.Context) {
 }
 
 func GetCSRFToken(c *gin.Context) {
-	log.Println("Получен запрос на /csrf-token")
-	csrfToken, err := c.Cookie("csrf_token")
-	if err != nil || csrfToken == "" {
-		tokenBytes := make([]byte, 32)
-		_, err := rand.Read(tokenBytes)
-		if err != nil {
-			log.Printf("Failed to generate CSRF token bytes: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate CSRF token"})
-			return
-		}
-		csrfToken = base64.StdEncoding.EncodeToString(tokenBytes)
-		log.Printf("Устанавливаем новый CSRF cookie: %s", csrfToken)
-		c.SetCookie("csrf_token", csrfToken, 3600, "/", "", false, false)
-	} else {
-		log.Printf("Используем существующий CSRF cookie: %s", csrfToken)
-	}
-	c.Header("X-CSRF-Token", csrfToken)
-	log.Printf("Отправляем ответ с CSRF token: %s", csrfToken)
-	c.JSON(http.StatusOK, gin.H{"csrf_token": csrfToken})
+    log.Println("Получен запрос на /csrf-token")
+
+    csrfToken, err := c.Cookie("csrf_token")
+    if err != nil || csrfToken == "" {
+        tokenBytes := make([]byte, 32)
+        _, err := rand.Read(tokenBytes)
+        if err != nil {
+            log.Printf("Failed to generate CSRF token: %v", err)
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate CSRF token"})
+            return
+        }
+        csrfToken = base64.StdEncoding.EncodeToString(tokenBytes)
+
+        // Устанавливаем куку без указания домена
+        c.SetCookie("csrf_token", csrfToken, 3600, "/", "", false, false)
+        log.Printf("Установлен новый CSRF-токен: %s", csrfToken)
+    } else {
+        log.Printf("Используется существующий CSRF-токен: %s", csrfToken)
+    }
+
+    c.Header("X-CSRF-Token", csrfToken)
+    c.JSON(http.StatusOK, gin.H{"csrf_token": csrfToken})
 }

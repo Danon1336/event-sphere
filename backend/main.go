@@ -18,11 +18,11 @@ func main() {
 
 	// Настройка CORS
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "http://127.0.0.1:3000"},
-		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "X-CSRF-Token", "Accept"},
-		ExposeHeaders:    []string{"X-CSRF-Token"},
-		AllowCredentials: true,
+    	AllowOrigins:     []string{"http://localhost:3000", "http://127.0.0.1:3000", "https://source.unsplash.com"},
+    	AllowMethods:     []string{"GET", "POST", "OPTIONS"},
+    	AllowHeaders:     []string{"Origin", "Content-Type", "X-CSRF-Token", "Cookie"},
+    	ExposeHeaders:    []string{"X-CSRF-Token", "Set-Cookie"},
+    	AllowCredentials: true,
 	}))
 
 	// Публичные маршруты
