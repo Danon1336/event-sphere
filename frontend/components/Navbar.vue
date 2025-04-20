@@ -7,7 +7,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
-      <NuxtLink to="/" class="logo text-2xl font-bold">Eventspherre</NuxtLink>
+      <NuxtLink to="/" class="logo text-2xl font-bold"><img src="public\img\logo.png" alt="Logo" class="logo"></NuxtLink>
     </div>
     <div class="hidden md:flex gap-3 items-center">
       <button class="nav-btn">
@@ -161,6 +161,9 @@ const toggleTheme = () => {
 </script>
 
 <style scoped>
+.logo{
+  width:50%
+}
 .mobile-nav-btn {
   @apply w-full p-3 rounded-lg flex items-center;
 }

@@ -34,12 +34,7 @@ func main() {
 	// Защищенные маршруты (требуется JWT)
 	protected := r.Group("/").Use(middleware.AuthMiddleware())
 	{
-		protected.GET("/list", handlers.GetList)
-		protected.GET("/support", handlers.GetSupport)
-		protected.GET("/notifications", handlers.GetNotifications)
-		protected.GET("/friends", handlers.GetFriends)
 		protected.GET("/profile", handlers.GetProfile)
-		protected.POST("/events", middleware.RoleMiddleware("participant", "organizer", "moderator"), handlers.AddEvent)
 	}
 
 	// Запуск сервера

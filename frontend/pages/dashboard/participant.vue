@@ -3,27 +3,33 @@
     <Navbar />
     
     <div class="container mx-auto p-4">
-      <!-- User Profile Header -->
-      <div class="flex flex-col md:flex-row gap-6 mb-6">
-        <!-- Profile Card -->
-        <div class="p-6 rounded-2xl user-info shadow-lg flex-1 flex items-center gap-6">
-          <div class="relative">
-            <div class="h-20 w-20 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
-              <span class="text-2xl font-bold text-white">ИИ</span>
+      <div class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden md:max-w-2xl mb-6">
+        <div class="md:flex p-6">
+          <div class="md:flex-shrink-0 flex items-center justify-center">
+            <img
+              v-if="user && user.avatar"
+              :src="user.avatar"
+              alt="User avatar"
+              class="h-24 w-24 rounded-full object-cover"
+            />
+            <div v-else class="h-24 w-24 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-gray-500 dark:text-gray-400 text-3xl font-semibold">
+              {{ user ? user.name.charAt(0).toUpperCase() : '' }}
             </div>
-            <div class="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-green-500 border-2 border-white"></div>
           </div>
-          <div class="flex-1">
-            <h2 class="text-2xl font-bold">Иван Иванов</h2>
-            <p class="text-opacity-80 mb-2">Участник мероприятий</p>
-            <div class="flex gap-2">
-              <span class="px-3 py-1 rounded-full text-sm bg-opacity-20 bg-blue-500">Gold Member</span>
-              <span class="px-3 py-1 rounded-full text-sm bg-opacity-20 bg-purple-500">Top 10%</span>
-            </div>
+          <div class="mt-4 md:mt-0 md:ml-6 flex flex-col justify-center">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{{ user ? user.name : '' }}</h2>
+            <p class="text-gray-600 dark:text-gray-300">{{ user ? user.email : '' }}</p>
+            <p class="text-gray-600 dark:text-gray-300 capitalize">{{ user ? user.role : '' }}</p>
+            <button
+              @click="logout"
+              class="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-300"
+            >
+              Выйти
+            </button>
           </div>
         </div>
-
-        <!-- Stats Cards -->
+      </div>
+      <div class="flex flex-col md:flex-row gap-6 mb-6"> 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 flex-1">
           <div class="p-4 rounded-xl stat-card shadow-md">
             <p class="text-opacity-60 text-sm">Мероприятий</p>
@@ -47,6 +53,8 @@
           </div>
         </div>
       </div>
+
+      
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Events Section -->
@@ -181,96 +189,74 @@
     </button>
   </div>
 </template>
-
 <script>
+import axios from 'axios'
+import Navbar from '@/components/Navbar.vue'
+
 export default {
+  components: { Navbar },
+
   data() {
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    
     return {
+      user: null,
+      error: null,
+      events: [],
       isDarkMode: true,
       activeTab: 'participating',
       tabs: [
         { id: 'participating', label: 'Текущие' },
-        { id: 'upcoming', label: 'Предстоящие' },
+        { id: 'upcoming',    label: 'Предстоящие' },
         { id: 'participated', label: 'Прошедшие' }
       ],
-      currentDay: now.getDate(),
-      daysInMonth,
-      calendarDays: Array.from({ length: 42 }, (_, i) => i - firstDay + 2),
       tagColors: [
         'bg-blue-500/20 text-blue-500',
         'bg-purple-500/20 text-purple-500',
         'bg-green-500/20 text-green-500',
         'bg-yellow-500/20 text-yellow-500'
       ],
-      events: [
-        { 
-          id: 1, 
-          title: 'ИТ Конференция 2025', 
-          date: '10 апреля 2025', 
-          time: '10:00 - 18:00',
-          tags: 'конференция, ИТ, технологии', 
-          status: 'participating',
-          image: 'https://source.unsplash.com/random/600x400/?conference',
-          rating: 4.8
-        },
-        { 
-          id: 2, 
-          title: 'Научный симпозиум', 
-          date: '15 июня 2025', 
-          time: '09:00 - 17:00',
-          tags: 'наука, симпозиум, образование', 
-          status: 'upcoming',
-          image: 'https://source.unsplash.com/random/600x400/?science',
-          rating: 4.5
-        },
-        { 
-          id: 3, 
-          title: 'ТехноФорум 2025', 
-          date: '20 августа 2025', 
-          time: '11:00 - 19:00',
-          tags: 'технологии, форум, инновации', 
-          status: 'upcoming',
-          image: 'https://source.unsplash.com/random/600x400/?tech',
-          rating: 4.7
-        },
-        { 
-          id: 4, 
-          title: 'Дизайн-уикенд', 
-          date: '12 марта 2025', 
-          time: '12:00 - 16:00',
-          tags: 'дизайн, креатив', 
-          status: 'participated',
-          image: 'https://source.unsplash.com/random/600x400/?design',
-          rating: 4.9
-        }
-      ],
-      friendActivities: [
-        { id: 1, initials: 'АП', name: 'Анна Петрова', action: 'зарегистрировалась на ИТ Конференцию', time: '2 часа назад' },
-        { id: 2, initials: 'ИС', name: 'Иван Сидоров', action: 'получил достижение "Активный участник"', time: '5 часов назад' },
-        { id: 3, initials: 'МК', name: 'Мария Козлова', action: 'добавила новое мероприятие', time: 'вчера' }
-      ]
-    };
+    }
   },
-  computed: {
-    filteredEvents() {
-      return this.events.filter(event => event.status === this.activeTab).slice(0, 4);
-    },
+
+  async mounted() {
+    // Настраиваем axios перед первым запросом
+    axios.defaults.baseURL = 'http://localhost:8080'
+    axios.defaults.withCredentials = true
+
+    await this.fetchUserData()
   },
+
   methods: {
+    async fetchUserData() {
+      try {
+        const response = await axios.get('/profile')
+        this.user = response.data
+      } catch (e) {
+        console.error('Error fetching user data:', e)
+        this.error = 'Не удалось загрузить данные о пользователе.'
+      }
+    },
+    logout() {
+      // При logout удаляем токен на сервере / на клиенте
+      // и возвращаемся на страницу логина
+      axios.post('/logout')
+      this.$router.push('/login')
+    },
     toggleTheme() {
-      this.isDarkMode = !this.isDarkMode;
+      this.isDarkMode = !this.isDarkMode
     },
     goToEvent(id) {
-      this.$router.push(`/event/${id}`);
-    },
+      this.$router.push(`/event/${id}`)
+    }
   },
-};
-</script>
 
+  computed: {
+    filteredEvents() {
+      // Защищённый .filter(), чтобы не было ошибки, если events ещё пуст
+      return (this.events || []).filter(event => event.status === this.activeTab)
+    }
+  }
+}
+</script>
 <style scoped>
 /* Light Theme */
 .light-theme {
